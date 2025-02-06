@@ -69,7 +69,6 @@ def curve_to_wire(list_of_items: list[Part.LineSegment]) -> Part.Wire:
 def create_rounded_rectangle(
     xwidth: float,
     ywidth: float,
-    zsketchplane: float,
     radius: float,
 ) -> Part.Wire:
     """Create rounded rectangle.
@@ -104,23 +103,23 @@ def create_rounded_rectangle(
     xarcv = xwidth / 2 - radius + radius * math.sin(math.pi / 4)
     yarcv = ywidth / 2 - radius + radius * math.sin(math.pi / 4)
 
-    v1 = FreeCAD.Vector(-xclosev, yfarv, zsketchplane)
-    v1 = FreeCAD.Vector(-xclosev, yfarv, zsketchplane)
-    v2 = FreeCAD.Vector(xclosev, yfarv, zsketchplane)
-    v3 = FreeCAD.Vector(xfarv, yclosev, zsketchplane)
-    v4 = FreeCAD.Vector(xfarv, -yclosev, zsketchplane)
-    v5 = FreeCAD.Vector(xclosev, -yfarv, zsketchplane)
-    v6 = FreeCAD.Vector(-xclosev, -yfarv, zsketchplane)
-    v7 = FreeCAD.Vector(-xfarv, -yclosev, zsketchplane)
-    v8 = FreeCAD.Vector(-xfarv, yclosev, zsketchplane)
+    v1 = FreeCAD.Vector(-xclosev, yfarv)
+    v1 = FreeCAD.Vector(-xclosev, yfarv)
+    v2 = FreeCAD.Vector(xclosev, yfarv)
+    v3 = FreeCAD.Vector(xfarv, yclosev)
+    v4 = FreeCAD.Vector(xfarv, -yclosev)
+    v5 = FreeCAD.Vector(xclosev, -yfarv)
+    v6 = FreeCAD.Vector(-xclosev, -yfarv)
+    v7 = FreeCAD.Vector(-xfarv, -yclosev)
+    v8 = FreeCAD.Vector(-xfarv, yclosev)
 
-    vc1 = FreeCAD.Vector(-xarcv, yarcv, zsketchplane)
+    vc1 = FreeCAD.Vector(-xarcv, yarcv)
     c1 = Part.Arc(v1, vc1, v8)
-    vc2 = FreeCAD.Vector(xarcv, yarcv, zsketchplane)
+    vc2 = FreeCAD.Vector(xarcv, yarcv)
     c2 = Part.Arc(v2, vc2, v3)
-    vc3 = FreeCAD.Vector(xarcv, -yarcv, zsketchplane)
+    vc3 = FreeCAD.Vector(xarcv, -yarcv)
     c3 = Part.Arc(v4, vc3, v5)
-    vc4 = FreeCAD.Vector(-xarcv, -yarcv, zsketchplane)
+    vc4 = FreeCAD.Vector(-xarcv, -yarcv)
     c4 = Part.Arc(v6, vc4, v7)
 
     l1 = Part.LineSegment(v1, v2)
@@ -153,13 +152,14 @@ def rounded_rectangle_chamfer(
         Part.Shape: Rounded rectangle chanfer shape.
 
     """
-    w1 = create_rounded_rectangle(xwidth, ywidth, zsketchplane, radius)
+    w1 = create_rounded_rectangle(xwidth, ywidth, radius).translate(
+        FreeCAD.Vector(0, 0, zsketchplane),
+    )
     w2 = create_rounded_rectangle(
         xwidth + 2 * height,
         ywidth + 2 * height,
-        zsketchplane + height,
         radius + height,
-    )
+    ).translate(FreeCAD.Vector(0, 0, zsketchplane + height))
     wires = [w1, w2]
     return Part.makeLoft(wires, solid=True)
 
@@ -184,6 +184,8 @@ def rounded_rectangle_extrude(
         Part.Shape: Rounded rectangle shape.
 
     """
-    w1 = create_rounded_rectangle(xwidth, ywidth, zsketchplane, radius)
+    w1 = create_rounded_rectangle(xwidth, ywidth, radius).translate(
+        FreeCAD.Vector(0, 0, zsketchplane),
+    )
     face = Part.Face(w1)
     return face.extrude(FreeCAD.Vector(0, 0, height))

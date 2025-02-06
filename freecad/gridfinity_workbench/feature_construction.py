@@ -452,7 +452,6 @@ def make_stacking_lip(obj: FreeCAD.DocumentObject) -> Part.Shape:
     stacking_lip_path = utils.create_rounded_rectangle(
         obj.xTotalWidth,
         obj.yTotalWidth,
-        0,
         obj.BinOuterRadius,
     )
     stacking_lip_path.translate(
