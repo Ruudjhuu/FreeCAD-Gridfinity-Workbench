@@ -66,6 +66,13 @@ def curve_to_wire(list_of_items: list[Part.LineSegment]) -> Part.Wire:
     return Part.Wire([item.toShape() for item in list_of_items])
 
 
+def merge_wires(wire_1: Part.Wire, wire_list: list[Part.Wire]) -> Part.Wire:
+    for wire in wire_list:
+        for edge in wire.Edges:
+            wire_1.add(edge)
+    return wire_1
+
+
 def create_rounded_rectangle(
     xwidth: float,
     ywidth: float,
@@ -89,6 +96,36 @@ def create_rounded_rectangle(
     if radius >= xwidth / 2 or radius >= ywidth / 2:
         msg = "Radius should be smaller than xwidth /2 or ywidth / 2"
         raise ValueError(msg)
+
+    x = xwidth / 2
+    y = ywidth / 2
+    xclose = x - radius
+    yclose = y - radius
+    xarcv = xclose + radius * math.sin(math.pi / 4)
+    yarcv = yclose + radius * math.sin(math.pi / 4)
+
+    origin = FreeCAD.Vector()
+    vec_1 = FreeCAD.Vector(x, 0)
+    vec_2 = FreeCAD.Vector(x, yclose)
+    vec_3 = FreeCAD.Vector(xclose, y)
+    vec_4 = FreeCAD.Vector(0, y)
+    vec_arc = FreeCAD.Vector(yarcv, xarcv)
+
+    wire = curve_to_wire(
+        [
+            # Part.LineSegment(origin, vec_1),
+            Part.LineSegment(vec_1, vec_2),
+            Part.Arc(vec_2, vec_arc, vec_3),
+            Part.LineSegment(vec_3, vec_4),
+            # Part.LineSegment(vec_4, origin),
+        ],
+    )
+    wire_2 = wire.mirror(FreeCAD.Vector(), FreeCAD.Vector(0, 1, 0))
+    wire_3 = wire.mirror(FreeCAD.Vector(), FreeCAD.Vector(1, 0, 0))
+    wire_4 = wire_2.mirror(FreeCAD.Vector(), FreeCAD.Vector(1, 0, 0))
+
+    total_wire = merge_wires(wire, [wire_2, wire_3, wire_4])
+    Part.show(total_wire)
 
     xfarv = xwidth / 2
     yfarv = ywidth / 2
