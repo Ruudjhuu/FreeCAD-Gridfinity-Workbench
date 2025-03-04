@@ -5,62 +5,67 @@ from tempfile import gettempdir
 import FreeCAD as fc  # noqa: N813
 import FreeCADGui as fcg  # noqa: N813
 
-tempdir = Path(gettempdir())
-doc_name = "GridfinityDocument"
+TEMPDIR = Path(gettempdir())
+DOC_NAME = "GridfinityDocument"
+
+SIMPLE_COMMANDS = [
+    "CreateBinBlank",
+    "CreateBinBase",
+    "CreateSimpleStorageBin",
+    "CreateEcoBin",
+    "CreatePartsBin",
+    "CreateBaseplate",
+    "CreateMagnetBaseplate",
+    "CreateScrewTogetherBaseplate",
+    "CreateLBinBlank",
+]
+
+CUSTOM_BIN_COMMANDS = [
+    "CreateCustomBin",
+]
+
+
+fcg.activateWorkbench("GridfinityWorkbench")
 
 
 class TestCommands(unittest.TestCase):
     def test_commands_active(self) -> None:
-        fc.newDocument(doc_name)
-        commands = [
-            "CreateBinBlank",
-            "CreateBinBase",
-            "CreateSimpleStorageBin",
-            "CreateEcoBin",
-            "CreatePartsBin",
-            "CreateBaseplate",
-            "CreateMagnetBaseplate",
-            "CreateScrewTogetherBaseplate",
-            "CreateLBinBlank",
-        ]
+        commands = SIMPLE_COMMANDS + CUSTOM_BIN_COMMANDS
+
         for command_name in commands:
-            command = fcg.Command.get(command_name)
-            self.assertTrue(command.isActive())
-        fc.closeDocument(doc_name)
+            self.assertFalse(fcg.Command.get(command_name).isActive())
+
+        fc.newDocument(DOC_NAME)
+
+        for command_name in commands:
+            self.assertTrue(fcg.Command.get(command_name).isActive())
+
+        fc.closeDocument(DOC_NAME)
 
 
 class TestSave(unittest.TestCase):
     def setUp(self) -> None:
-        self.filepath = str(tempdir / self.__class__.__name__) + ".FCStd"
+        self.filepath = str(TEMPDIR / self.__class__.__name__) + ".FCStd"
 
     def test_serialization(self) -> None:
-        doc = fc.newDocument(doc_name)
-        commands = [
-            "CreateBinBlank",
-            "CreateBinBase",
-            "CreateSimpleStorageBin",
-            "CreateEcoBin",
-            "CreatePartsBin",
-            "CreateBaseplate",
-            "CreateMagnetBaseplate",
-            "CreateScrewTogetherBaseplate",
-            "CreateLBinBlank",
-        ]
+        commands = SIMPLE_COMMANDS
+
+        doc = fc.newDocument(DOC_NAME)
 
         for command_name in commands:
             fcg.Command.get(command_name).run()
         self.assertEqual(len(doc.Objects), len(commands))
 
         doc.saveAs(str(self.filepath))
-        fc.closeDocument(doc_name)
+        fc.closeDocument(DOC_NAME)
 
     def test_reopen(self) -> None:
-        doc = fc.newDocument(doc_name)
+        command_name = SIMPLE_COMMANDS[0]
 
-        fcg.Command.get("CreateBinBlank").run()
-
+        doc = fc.newDocument(DOC_NAME)
+        fcg.Command.get(command_name).run()
         doc.saveAs(str(self.filepath))
-        fc.closeDocument(doc_name)
+        fc.closeDocument(DOC_NAME)
         doc = fc.openDocument(self.filepath)
 
         self.assertEqual(len(doc.Objects), 1)
@@ -71,3 +76,5 @@ class TestSave(unittest.TestCase):
         obj.xGridUnits = 3
         recomputed_count = doc.recompute((obj,), True)  # noqa: FBT003
         self.assertEqual(recomputed_count, 1)
+
+        fc.closeDocument(doc.Name)
