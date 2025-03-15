@@ -44,10 +44,8 @@ class TestCommands(unittest.TestCase):
 
 
 class TestSave(unittest.TestCase):
-    def setUp(self) -> None:
-        self.filepath = str(TEMPDIR / self.__class__.__name__) + ".FCStd"
-
-    def test_serialization(self) -> None:
+    def test_reopen(self) -> None:
+        filepath = str(TEMPDIR / self.__class__.__name__) + ".FCStd"
         commands = SIMPLE_COMMANDS
 
         doc = fc.newDocument(DOC_NAME)
@@ -56,25 +54,19 @@ class TestSave(unittest.TestCase):
             fcg.Command.get(command_name).run()
         self.assertEqual(len(doc.Objects), len(commands))
 
-        doc.saveAs(str(self.filepath))
-        fc.closeDocument(DOC_NAME)
+        doc.saveAs(str(filepath))
+        fc.closeDocument(doc.Name)
 
-    def test_reopen(self) -> None:
-        command_name = SIMPLE_COMMANDS[0]
+        doc = fc.openDocument(filepath)
 
-        doc = fc.newDocument(DOC_NAME)
-        fcg.Command.get(command_name).run()
-        doc.saveAs(str(self.filepath))
-        fc.closeDocument(DOC_NAME)
-        doc = fc.openDocument(self.filepath)
-
-        self.assertEqual(len(doc.Objects), 1)
-        obj = doc.Objects[0]
+        self.assertEqual(len(doc.Objects), len(commands))
 
         # change something, so `recompute` is not optimized out
         # (even force=True doesn't guarantee this)
-        obj.xGridUnits = 3
-        recomputed_count = doc.recompute((obj,), True)  # noqa: FBT003
-        self.assertEqual(recomputed_count, 1)
+        for obj in doc.Objects:
+            obj.xGridSize = 30
+        recomputed_count = doc.recompute(None, True)  # noqa: FBT003
+        self.assertEqual(recomputed_count, len(commands))
 
+        doc.save()
         fc.closeDocument(doc.Name)
